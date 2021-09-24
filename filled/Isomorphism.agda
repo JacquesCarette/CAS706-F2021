@@ -25,13 +25,17 @@ postulate
 -- Another definition of addition.
 
 _+′_ : ℕ → ℕ → ℕ -- split on n instead, get different code
-m +′ n = {!!}
+m +′ zero = m
+m +′ suc n = suc (m +′ n)
 
 same-app : ∀ (m n : ℕ) → m +′ n ≡ m + n
-same-app m n = {!!}
+same-app zero zero = refl
+same-app zero (suc n) = cong suc (same-app zero n)
+same-app (suc m) zero = cong suc (same-app m zero)
+same-app (suc m) (suc n) = cong suc {!!}
 
 same : _+′_ ≡ _+_  -- this requires extensionality
-same = {!!}
+same = extensionality λ x → extensionality λ y → same-app x y
 
 -- Isomorphism.
 

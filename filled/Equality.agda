@@ -2,8 +2,9 @@ module Equality where
 
 -- No imports!
 
--- The definition of equality.
-
+-- The definition of **intensional** equality.
+-- origins of extensional and intensional: philosophy of math, via Frege and Russell
+-- key word: denotation, denoted
 data _≡_ {A : Set} (x : A) : A → Set where
   refl : x ≡ x
 
@@ -11,12 +12,9 @@ infix 4 _≡_
 
 -- Properties of equality.
 
-sym : ∀ {A : Set} {x y : A}
-  → x ≡ y
-    -----
-  → y ≡ x
+sym : ∀ {A : Set} {x y : A} → x ≡ y → y ≡ x
 
-sym x≡y = {!!}
+sym refl = refl
 
 trans : ∀ {A : Set} {x y z : A}
   → x ≡ y
@@ -24,7 +22,7 @@ trans : ∀ {A : Set} {x y z : A}
     -----
   → x ≡ z
 
-trans x≡y y≡z = {!!}
+trans refl y≡z = y≡z
 
 -- Congruence: applying a function to equal values yields equal values.
 
@@ -33,7 +31,7 @@ cong : ∀ {A B : Set} (f : A → B) {x y : A}
     ---------
   → f x ≡ f y
 
-cong f x≡y = {!!}
+cong f refl = refl
 
 -- Congruence with two arguments.
 
@@ -43,7 +41,9 @@ cong₂ : ∀ {A B C : Set} (f : A → B → C) {u x : A} {v y : B}
     -------------
   → f u v ≡ f x y
 
-cong₂ f u≡x v≡y = {!!}
+-- proof in main library refines on v≡y
+-- let's do a different one!
+cong₂ f {u} refl v≡y = cong (f u) v≡y
 
 -- Applying two equal functions to a value yields equal values.
 
@@ -52,16 +52,17 @@ cong-app : ∀ {A B : Set} {f g : A → B}
     ---------------------
   → ∀ (x : A) → f x ≡ g x
 
-cong-app f≡g x = {!!}
+cong-app refl x = refl
 
 -- Equal values have the same properties.
+-- Also linked to "Leibniz equality"
 
 subst : ∀ {A : Set} {x y : A} (P : A → Set)
   → x ≡ y
     ---------
   → P x → P y
 
-subst P x≡y px = {!!}
+subst P refl px = px
 
 -- Here is how equational reasoning is set up.
 
@@ -106,14 +107,10 @@ trans′ : ∀ {A : Set} {x y z : A}
     -----
   → x ≡ z
 
-trans′ {A} {x} {y} {z} x≡y y≡z =
-  begin
-    x
-  ≡⟨ x≡y ⟩
-    y
-  ≡⟨ y≡z ⟩
-    z
-  ∎
+trans′ {A} {x} {y} {z} x≡y y≡z = begin
+    x   ≡⟨ x≡y ⟩
+    y   ≡⟨ y≡z ⟩
+    z   ∎
 
 -- Another example from PLFA.
 -- Definitions repeated to avoid imports.
@@ -135,25 +132,17 @@ postulate
 
 +-comm : ∀ (m n : ℕ) → m + n ≡ n + m
 
-+-comm m zero =
-  begin
-    m + zero
-  ≡⟨ +-identity m ⟩
-    m
-  ≡⟨⟩
-    zero + m
-  ∎
++-comm m zero = begin
+    m + zero  ≡⟨ +-identity m ⟩
+    m         ≡⟨⟩
+    zero + m  ∎
 
 +-comm m (suc n) =
   begin
-    m + suc n
-  ≡⟨ +-suc m n ⟩
-    suc (m + n)
-  ≡⟨ cong suc (+-comm m n) ⟩
-    suc (n + m)
-  ≡⟨⟩
-    suc n + m
-  ∎
+    m + suc n    ≡⟨ +-suc m n ⟩
+    suc (m + n)  ≡⟨ cong suc (+-comm m n) ⟩
+    suc (n + m)  ≡⟨⟩
+    suc n + m    ∎
 
 -- PLFA exercise: define tabular reasoning for ≤ and use it to show
 -- that addition is monotonic with respect to ≤.
@@ -188,7 +177,7 @@ even-comm : ∀ (m n : ℕ)
     ------------
   → even (n + m)
 
-even-comm m n ev = {!!}
+even-comm m n ev rewrite +-comm m n = ev
 
 -- PLFA shows how to prove +-comm using rewrites (which we already did).
 
@@ -204,7 +193,7 @@ even-comm′ : ∀ (m n : ℕ)
 -- Then we split on the proof.
 
 even-comm′ m n ev with   m + n  | +-comm m n
-... | r1 | r2       = {!!}
+... | .(n + m) | refl = ev
 
 -- In this case, rewrite is not necessary.
 
@@ -238,7 +227,7 @@ trans-≐ : ∀ {A : Set} {x y z : A}
   → y ≐ z
     -----
   → x ≐ z
-trans-≐ x≐y y≐z P Px  =  y≐z P (x≐y P Px)
+trans-≐ x≐y y≐z P Px  = y≐z P (x≐y P Px) --  y≐z P (x≐y P Px)
 
 sym-≐ : ∀ {A : Set} {x y : A}
   → x ≐ y
