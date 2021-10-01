@@ -23,8 +23,8 @@ fromb (n x1) = suc (dbl (fromb n))
 
 dblb : Bin-ℕ → Bin-ℕ
 dblb bits = bits
-dblb (b x0) = dblb b x0
-dblb (b x1) = inc (dblb b) x0
+dblb (b x0) = b x0 x0
+dblb (b x1) = b x1 x0
 
 -- The reason that we couldn't prove ∀ {n : Bin-ℕ} → tob (fromb n) ≡ n
 -- is because of the possibility of leading zeroes in a Bin-ℕ value.
