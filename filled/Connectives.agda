@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module Connectives where
 
 -- Library
@@ -8,41 +9,8 @@ open Eq.≡-Reasoning
 open import Data.Nat using (ℕ)
 open import Function using (_∘_)
 
--- Copied from 747Isomorphism.
-
-postulate
-  extensionality : ∀ {A B : Set} {f g : A → B}
-    → (∀ (x : A) → f x ≡ g x)
-      -----------------------
-    → f ≡ g
-
-infix 0 _≃_
-record _≃_ (A B : Set) : Set where
-  constructor mk-≃  -- This has been added, not in PLFA
-  field
-    to   : A → B
-    from : B → A
-    from∘to : ∀ (x : A) → from (to x) ≡ x
-    to∘from : ∀ (y : B) → to (from y) ≡ y
-open _≃_
-
-infix 0 _≲_
-record _≲_ (A B : Set) : Set where
-  field
-    to      : A → B
-    from    : B → A
-    from∘to : ∀ (x : A) → from (to x) ≡ x
-open _≲_
-
-record _⇔_ (A B : Set) : Set where
-  field
-    to   : A → B
-    from : B → A
-open _⇔_
-
--- You may copy over the various reasoning modules if you wish.
-
--- End of code from 747Isomorphism.
+-- you may import more, as needed
+open import Isomorphism using (extensionality; _≃_; _≲_; _⇔_)
 
 -- Logical AND is Cartesian product.
 
