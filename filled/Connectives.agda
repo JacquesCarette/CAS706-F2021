@@ -208,7 +208,18 @@ to∘from currying g = extensionality λ x → cong g (η-× x)
 -- For types, (A ⊎ B → C) ≃ ((A → C) × (B → C)).
 
 →-distrib-⊎ : ∀ {A B C : Set} → (A ⊎ B → C) ≃ ((A → C) × (B → C))
-→-distrib-⊎ = {!!}
+→-distrib-⊎ {A} {B} {C} = Isomorphism.mk-≃ to′ from′ from∘to′ to∘from′
+  where
+    to′ :  (A ⊎ B → C) → (A → C) × (B → C)
+    to′ f = ⟨ f ∘ inj₁ , f ∘ inj₂ ⟩ -- ⟨ (λ a → f (inj₁ a)) , (λ b → f (inj₂ b)) ⟩
+    from′ : (A → C) × (B → C) → A ⊎ B → C
+    from′ ⟨ f , g ⟩ = case-⊎ f g
+    from∘to′ : (f : A ⊎ B → C) → (from′ ∘ to′) f  ≡ f
+    from∘to′ f = extensionality λ { (inj₁ x) → refl
+                                  ; (inj₂ x) → refl
+                                  }
+    to∘from′ : ∀ y → (to′ ∘ from′) y ≡ y
+    to∘from′ ⟨ f , g ⟩ = refl
 
 -- In math,   (p * n) ^ m = (p ^ m) * (n ^ m).
 -- For types, (A → B × C) ≃ (A → B) × (A → C).

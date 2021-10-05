@@ -16,19 +16,29 @@ open import Isomorphism
 -- Logical forall is, not surpringly, ∀.
 -- Forall elimination is also function application.
 
-∀-elim : ∀ {A : Set} {B : A → Set} → (L : ∀ (x : A) → B x) → (M : A) → B M
-∀-elim L M = L M
+∀-elim : {A : Set} {P : A → Set} → (L : ∀ (a : A) → P a) → (a′ : A) → P a′
+∀-elim L P = L P
 
 -- In fact, A → B is nicer syntax for ∀ (_ : A) → B.
 
 -- Existential quantification can be defined as a pair:
 -- a witness and a proof that the witness satisfies the property.
 
+{- one odd way to encode that is to use a 1-argument data type:
 data Σ (A : Set) (B : A → Set) : Set where
-  ⟨_,_⟩ : (x : A) → B x → Σ A B
+  ⟨_,_⟩ : a : A) → B a → Σ A B
+-}
+-- This is equivalent to defining a dependent record type.
+
+record Σ (A : Set) (B : A → Set) : Set where
+  constructor ⟨_,_⟩
+  field
+    proj₁ : A
+    proj₂ : B proj₁
 
 -- Some convenient syntax.
 
+Σ-syntax : (A : Set) (B : A → Set) → Set
 Σ-syntax = Σ
 infix 2 Σ-syntax
 syntax Σ-syntax A (λ x → B) = Σ[ x ∈ A ] B
@@ -36,12 +46,6 @@ syntax Σ-syntax A (λ x → B) = Σ[ x ∈ A ] B
 -- Unfortunately, we can use the RHS syntax in code,
 -- but the LHS will show up in displays of goal and context.
 
--- This is equivalent to defining a dependent record type.
-
-record Σ′ (A : Set) (B : A → Set) : Set where
-  field
-    proj₁′ : A
-    proj₂′ : B proj₁′
 
 -- By convention, the library uses ∃ when the domain of the bound variable is implicit.
 
@@ -65,10 +69,10 @@ syntax ∃-syntax (λ x → B) = ∃[ x ] B
 
 ∀∃-currying : ∀ {A : Set} {B : A → Set} {C : Set}
   → (∀ x → B x → C) ≃ (∃[ x ] B x → C)
-_≃_.to ∀∃-currying f ⟨ x , x₁ ⟩ = f x x₁
-_≃_.from ∀∃-currying e x x₁ = e ⟨ x , x₁ ⟩
+_≃_.to      ∀∃-currying f ⟨ x , y ⟩ = f x y
+_≃_.from    ∀∃-currying e x y = e ⟨ x , y ⟩
 _≃_.from∘to ∀∃-currying f = refl
-_≃_.to∘from ∀∃-currying e = extensionality λ { ⟨ x , x₁ ⟩ → refl}
+_≃_.to∘from ∀∃-currying e = extensionality λ { _ → refl}
 
 -- An existential example: revisiting even/odd.
 open import Relations using (even; odd; zero; suc)
@@ -89,6 +93,6 @@ odd-∃ (suc x) | ⟨ x₁ , refl ⟩ = ⟨ x₁ , refl ⟩
 ∃-even : ∀ {n : ℕ} → ∃[ m ] (    m * 2 ≡ n) → even n
 ∃-odd  : ∀ {n : ℕ} → ∃[ m ] (1 + m * 2 ≡ n) →  odd n
 
-∃-even ⟨ zero , refl ⟩ = zero
-∃-even ⟨ suc x , refl ⟩ = suc (∃-odd ⟨ x , refl ⟩)
-∃-odd ⟨ x , refl ⟩ = suc (∃-even ⟨ x , refl ⟩)
+∃-even ⟨ zero  , refl ⟩ = zero
+∃-even ⟨ suc x , refl ⟩ = suc (∃-odd  ⟨ x , refl ⟩)
+∃-odd  ⟨ x     , refl ⟩ = suc (∃-even ⟨ x , refl ⟩)

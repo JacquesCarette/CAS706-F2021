@@ -18,26 +18,26 @@ open import Isomorphism using (extensionality)
 -- if both ¬ A and A hold, then ⊥ holds (not surprisingly).
 
 ¬-elim : ∀ {A : Set} → ¬ A → A → ⊥
-¬-elim = {!!}
+¬-elim ¬a a = ¬a a
 
 infix 3 ¬_
 
 -- Double negation introduction.
 
 ¬¬-intro : ∀ {A : Set} → A → ¬ ¬ A
-¬¬-intro = {!!}
+¬¬-intro a = λ f → f a
 
 -- Double negation cannot be eliminated in intuitionistic logic.
 
 -- Triple negation elimination.
 
 ¬¬¬-elim : ∀ {A : Set} → ¬ ¬ ¬ A → ¬ A
-¬¬¬-elim = {!!}
+¬¬¬-elim a‴ a = a‴ (¬¬-intro a)
 
 -- One direction of the contrapositive.
 
 contraposition : ∀ {A B : Set} → (A → B) → (¬ B → ¬ A)
-contraposition = {!!}
+contraposition f ¬b a = ¬b (f a)
 
 -- The other direction cannot be proved in intuitionistic logic.
 
@@ -47,22 +47,22 @@ _≢_ : ∀ {A : Set} → A → A → Set
 x ≢ y  =  ¬ (x ≡ y)
 
 _ : 1 ≢ 2
-_ = {!!}
+_ = λ {()}
 
 -- One of the first-order Peano axioms.
 
 peano : ∀ {m : ℕ} → zero ≢ suc m
-peano = {!!}
+peano = λ { ()}
 
 
 -- Two proofs of ⊥ → ⊥ which look different but are the same
 -- (assuming extensionality).
 
 id : ⊥ → ⊥
-id x = x
+id x = x -- this one is lazy
 
 id′ : ⊥ → ⊥
-id′ ()
+id′ () -- this one is eager
 
 id≡id′ : id ≡ id′
 id≡id′ = extensionality (λ())
