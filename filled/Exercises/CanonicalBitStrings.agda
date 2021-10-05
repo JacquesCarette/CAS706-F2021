@@ -145,7 +145,7 @@ record CanR : Set where
 -- 747/PLFA exercise: Rewrap (1 point)
 -- This helper will be useful.
 
-rewrap : ∀ {m n} x y → m ≡ n → mk-CanR m x ≡ mk-CanR n y
+rewrap : ∀ {m n : Bin-ℕ} → (x : Can m) → (y : Can n) → m ≡ n → mk-CanR m x ≡ mk-CanR n y
 rewrap = {!!}
 
 -- 747/PLFA exercise: IsoNCanR (2 points)
