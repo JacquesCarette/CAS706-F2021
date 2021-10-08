@@ -72,21 +72,6 @@ id≡id′ = extensionality (λ())
 assimilation : ∀ {A : Set} (¬x ¬x′ : ¬ A) → ¬x ≡ ¬x′
 assimilation ¬x ¬x′ = extensionality λ x → ⊥-elim (¬x x)
 
--- Strict inequality (copied from 747Relations).
-
-infix 4 _<_
-
-data _<_ : ℕ → ℕ → Set where
-
-  z<s : ∀ {n : ℕ}
-      ------------
-    → zero < suc n
-
-  s<s : ∀ {m n : ℕ}
-    → m < n
-      -------------
-    → suc m < suc n
-
 -- Definition: a formula is stable if double negation holds for it.
 
 Stable : Set → Set
