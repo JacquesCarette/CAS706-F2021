@@ -102,11 +102,11 @@ _ = refl
 -- We can also evaluate the LHS of these using C-c C-n.
 
 -- Reusing ≤ᵇ and proofs of equivalence with ≤ to decide ≤.
-
+-- This is hard and tricky!!!
 _≤?′_ : ∀ (m n : ℕ) → Dec (m ≤ n)
-m ≤?′ n with m ≤ᵇ n
-... | false = no λ m≤n → {!≤→≤ᵇ m≤n!}
-... | true = {!!}
+m ≤?′ n with m ≤ᵇ n | ≤ᵇ→≤ m n | ≤→≤ᵇ {m} {n}
+... | false | _ | ¬p = no ¬p
+... | true  | p | _  = yes (p tt)
 
 -- Erasing Dec down to Bool (or "isYes").
 

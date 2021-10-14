@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module Lists where
 
 -- Library
@@ -233,23 +234,6 @@ foldr-monoid xs y = {!!}
 foldr-monoid-++ : ∀ {A : Set} → {{m : IsMonoid A}} →
   ∀ (xs ys : List A) → foldr _⊗_ id (xs ++ ys) ≡ foldr _⊗_ id xs ⊗ foldr _⊗_ id ys
 foldr-monoid-++ xs ys = {!!}
-
--- 747/PLFA exercise: Foldl (1 point)
--- Define foldl, which associates left instead of right, e.g.
---   foldr _⊗_ e [ x , y , z ]  =  x ⊗ (y ⊗ (z ⊗ e))
---   foldl _⊗_ e [ x , y , z ]  =  ((e ⊗ x) ⊗ y) ⊗ z
-
-foldl : ∀ {A B : Set} → (B → A → B) → B → List A → B
-foldl _⊗_ e xs = {!!}
-
--- 747/PLFA exercise: FoldrMonFoldl (2 points)
--- Show that foldr and foldl compute the same value on a monoid
--- when the base case is the identity.
--- Hint: write a helper function for when the base case of foldl is an arbitrary value.
-
-foldl-r-mon : ∀ {A : Set} → {{m : IsMonoid A}} →
-  ∀ (xs : List A) → foldl _⊗_ id xs ≡ foldr _⊗_ id xs
-foldl-r-mon xs = {!!}
 
 -- Inductively-defined predicates over lists
 
