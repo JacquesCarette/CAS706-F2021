@@ -23,17 +23,19 @@ open import Relations using (_<_; s<s; z<s)
 -- (or their negations).
 
 2≤4 : 2 ≤ 4
-2≤4 = {!!}
+2≤4 = s≤s (s≤s z≤n)
 
 ¬4≤2 : ¬ (4 ≤ 2)
-¬4≤2 = {!!}
+¬4≤2 (s≤s (s≤s ()))
 
 -- We can define a Boolean comparison function.
 
 infix 4 _≤ᵇ_
 
 _≤ᵇ_ : ℕ → ℕ → Bool
-m ≤ᵇ n = {!!}
+zero ≤ᵇ n = true
+suc m ≤ᵇ zero = false
+suc m ≤ᵇ suc n = m ≤ᵇ n
 
 -- PLFA steps through these computations using equational reasoning.
 
@@ -50,16 +52,18 @@ T true   =  ⊤
 T false  =  ⊥
 
 T→≡ : ∀ (b : Bool) → T b → b ≡ true
-T→≡ b t = {!!}
+T→≡ true t = refl
 
 ≡→T : ∀ {b : Bool} → b ≡ true → T b
-≡→T e = {!!}
+≡→T refl = tt
 
 ≤ᵇ→≤ : ∀ (m n : ℕ) → T (m ≤ᵇ n) → m ≤ n
-≤ᵇ→≤ m n t = {!!}
+≤ᵇ→≤ zero n t = z≤n
+≤ᵇ→≤ (suc m) (suc n) t = s≤s (≤ᵇ→≤ m n t)
 
 ≤→≤ᵇ : ∀ {m n : ℕ} → m ≤ n → T (m ≤ᵇ n)
-≤→≤ᵇ m≤n = {!!}
+≤→≤ᵇ z≤n = tt
+≤→≤ᵇ (s≤s m≤n) = ≤→≤ᵇ m≤n
 
 -- Getting the best of both worlds!
 
@@ -71,15 +75,23 @@ data Dec (A : Set) : Set where
 -- If you don't use these, the examples below won't normalize.
 
 ¬s≤z : ∀ {m : ℕ} → ¬ (suc m ≤ zero)
-¬s≤z = {!!}
+¬s≤z ()
 
 ¬s≤s : ∀ {m n : ℕ} → ¬ (m ≤ n) → ¬ (suc m ≤ suc n)
-¬s≤s = {!!}
+¬s≤s m>n (s≤s m≤n) = m>n m≤n
 
 -- Decidable ≤.
 
 _≤?_ : ∀ (m n : ℕ) → Dec (m ≤ n)
-m ≤? n = {!!}
+zero ≤? n = yes z≤n
+suc m ≤? zero = no (¬s≤z {m})
+suc m ≤? suc n = suc-≤? m n (m ≤? n) {- with m ≤? n
+... | yes x = yes (s≤s x)
+... | no x = no (¬s≤s x) -}
+  where
+    suc-≤? : (a b : ℕ) → Dec (a ≤ b) → Dec (suc a ≤ suc b)
+    suc-≤? a b (yes x) = yes (s≤s x)
+    suc-≤? a b (no x) = no (¬s≤s x)
 
 _ : 2 ≤? 4 ≡ yes (s≤s (s≤s z≤n))
 _ = refl
@@ -92,7 +104,9 @@ _ = refl
 -- Reusing ≤ᵇ and proofs of equivalence with ≤ to decide ≤.
 
 _≤?′_ : ∀ (m n : ℕ) → Dec (m ≤ n)
-m ≤?′ n = {!!}
+m ≤?′ n with m ≤ᵇ n
+... | false = no λ m≤n → {!≤→≤ᵇ m≤n!}
+... | true = {!!}
 
 -- Erasing Dec down to Bool (or "isYes").
 
