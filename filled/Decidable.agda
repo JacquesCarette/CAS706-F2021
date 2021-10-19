@@ -8,8 +8,9 @@ open Eq using (_≡_; refl; sym) -- added sym
 open Eq.≡-Reasoning
 open import Data.Bool using (Bool; true; false)
 open import Data.Nat using (ℕ; zero; suc; _≤_; z≤n; s≤s)
-open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Product using (_×_; proj₁) renaming (_,_ to ⟨_,_⟩)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
+open import Function using (_∘_)
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using ()
   renaming (contradiction to ¬¬-intro)
@@ -111,8 +112,8 @@ m ≤?′ n with m ≤ᵇ n | ≤ᵇ→≤ m n | ≤→≤ᵇ {m} {n}
 -- Erasing Dec down to Bool (or "isYes").
 
 ⌊_⌋ : ∀ {A : Set} → Dec A → Bool
-⌊ yes x ⌋ = true
-⌊ no x ⌋ = false
+⌊ yes _ ⌋ = true
+⌊ no _ ⌋ = false
 
 _≤ᵇ′_ : ℕ → ℕ → Bool
 m ≤ᵇ′ n  =  ⌊ m ≤? n ⌋
@@ -120,10 +121,11 @@ m ≤ᵇ′ n  =  ⌊ m ≤? n ⌋
 -- If D is Dec A, then T ⌊ D ⌋ is inhabited exactly when A is inhabited.
 
 toWitness : ∀ {A : Set} {D : Dec A} → T ⌊ D ⌋ → A
-toWitness t = {!!}
+toWitness {_} {yes x} _ = x
 
 fromWitness : ∀ {A : Set} {D : Dec A} → A → T ⌊ D ⌋
-fromWitness a = {!!}
+fromWitness {D = yes x} a = tt
+fromWitness {D = no x} a = x a
 
 -- Similar ideas when it is the "no" witnesses we want to handle.
 
@@ -132,10 +134,11 @@ isNo (yes _) = false
 isNo (no _)  = true
 
 toWitnessFalse : ∀ {A : Set} {D : Dec A} → T (isNo D) → ¬ A
-toWitnessFalse = {!!}
+toWitnessFalse {_} {no x} t = x
 
 fromWitnessFalse : ∀ {A : Set} {D : Dec A} → ¬ A → T (isNo D)
-fromWitnessFalse = {!!}
+fromWitnessFalse {_} {yes x} ¬a = ¬a x
+fromWitnessFalse {_} {no x} ¬a = tt
 
 -- Agda standard library definitions for use of these.
 
@@ -167,7 +170,11 @@ false ∧ y = false
 infixr 6 _×-dec_
 
 _×-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A × B)
-da ×-dec db = {!!}
+yes a ×-dec yes b = yes ⟨ a , b ⟩
+yes a ×-dec no b = no λ { ⟨ _ , y ⟩ → b y }
+no a ×-dec db = no (a ∘ proj₁) -- point-free !
+   -- no λ p → a (proj₁ p)  -- <-- this is probably the most readable one?
+   -- no λ { ⟨ x , _ ⟩ → a x }
 
 infixr 5 _∨_
 
@@ -178,14 +185,17 @@ false ∨ y = y
 infixr 5 _⊎-dec_
 
 _⊎-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⊎ B)
-da ⊎-dec db = {!!}
+yes x ⊎-dec _     = yes (inj₁ x)
+no x  ⊎-dec yes b = yes (inj₂ b)
+no ¬a ⊎-dec no ¬b = no  [ ¬a , ¬b ]′ -- less point-free: no (λ x → [ ¬a , ¬b ]′ x)
 
 not : Bool → Bool
 not true  = false
 not false = true
 
 ¬? : ∀ {A : Set} → Dec A → Dec (¬ A)
-¬? da = {!!}
+¬? (yes x) = no (¬¬-intro x)
+¬? (no x) = yes x
 
 -- A Boolean version of implication.
 
@@ -195,7 +205,9 @@ true ⊃ false = false
 false ⊃ y = true
 
 _→-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A → B)
-da →-dec db = {!!}
+yes a →-dec yes b = yes λ _ → b
+yes a →-dec no ¬b = no λ f → ¬b (f a)
+no ¬a →-dec db = yes λ a → ⊥-elim (¬a a) -- other answer: yes (⊥-elim ∘ ¬ a)
 
 _iff_ : Bool → Bool → Bool
 true iff true = true
@@ -226,6 +238,11 @@ _-_ m n {n≤m} = minus m n (toWitness n≤m)
 
 _ : 5 - 3 ≡ 2
 _ = refl
+
+{-
+_ : 3 - 5 ≡ 0
+_ = {!!}
+-}
 
 -- We will later use this to get Agda to compute parts of proofs
 -- that would be annoying for us to provide.
