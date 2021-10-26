@@ -370,7 +370,7 @@ data Type : Set where
 
 -- Contexts provide types for free variables.
 -- Essentially a list of (name, type) pairs, most recently added to right.
-
+-- so-called 'snoc' lists, where snoc = cons backwards
 infixl 5  _,_⦂_
 
 data Context : Set where
@@ -388,7 +388,7 @@ data _∋_⦂_ : Context → Id → Type → Set where
 
   Z : ∀ {Γ x A}
       ------------------
-    → Γ , x ⦂ A ∋ x ⦂ A
+    → (Γ , x ⦂ A) ∋ x ⦂ A
 
   S : ∀ {Γ x y A B}
     → x ≢ y
@@ -426,8 +426,8 @@ data _⊢_⦂_ : Context → Term → Type → Set where
   -- ⇒-I
   ⊢ƛ : ∀ {Γ x N A B}
     → Γ , x ⦂ A ⊢ N ⦂ B
-      -------------------
-    → Γ ⊢ ƛ x ⇒ N ⦂ A ⇒ B
+      -----------------------
+    → Γ ⊢ (ƛ x ⇒ N) ⦂ (A ⇒ B)
 
   -- ⇒-E
   _·_ : ∀ {Γ L M A B}
@@ -476,30 +476,35 @@ Ch : Type → Type
 Ch A = (A ⇒ A) ⇒ A ⇒ A
 
 ⊢twoᶜ : ∀ {Γ A} → Γ ⊢ twoᶜ ⦂ Ch A
-⊢twoᶜ = {!!}
+⊢twoᶜ {Γ} {A} = ⊢ƛ (⊢ƛ (ts · (ts · (⊢` Z))))
+  where
+    ts : Γ , "s" ⦂ A ⇒ A , "z" ⦂ A ⊢ ` "s" ⦂ A ⇒ A
+    ts = ⊢` (S′ Z)
 
 ⊢two : ∀ {Γ} → Γ ⊢ two ⦂ `ℕ
-⊢two = ?
+⊢two = ⊢suc (⊢suc ⊢zero)
 
 -- A typing derivation for "two plus two".
 -- Done in arbitrary contexts to permit reuse.
 
 ⊢plus : ∀ {Γ} → Γ ⊢ plus ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
-⊢plus = {!!}
+⊢plus = ⊢μ (⊢ƛ (⊢ƛ (⊢case (⊢` (S′ Z)) (⊢` Z)
+  (⊢suc (((⊢` (S′ (S′ (S′ Z)))) · ⊢` Z) · ⊢` (S′ Z))))))
 
 ⊢2+2 : ∅ ⊢ plus · two · two ⦂ `ℕ
-⊢2+2 = {!!}
+⊢2+2 = (⊢plus · ⊢two) · ⊢two
 
 ⊢plusᶜ : ∀ {Γ A} → Γ  ⊢ plusᶜ ⦂ Ch A ⇒ Ch A ⇒ Ch A
-⊢plusᶜ = {!!}
+⊢plusᶜ = ⊢ƛ (⊢ƛ (⊢ƛ (⊢ƛ (((⊢` (S′ (S′ (S′ Z)))) · (⊢` (S′ Z))) ·
+  (((⊢` (S′ (S′ Z))) · (⊢` (S′ Z))) · (⊢` Z))))))
 
 -- The rest of the Church examples.
 
 ⊢sucᶜ : ∀ {Γ} → Γ ⊢ sucᶜ ⦂ `ℕ ⇒ `ℕ
-⊢sucᶜ = {!!}
+⊢sucᶜ = ⊢ƛ (⊢suc (⊢` Z))
 
 ⊢2+2ᶜ : ∅ ⊢ plusᶜ · twoᶜ · twoᶜ · sucᶜ · `zero ⦂ `ℕ
-⊢2+2ᶜ = {!!}
+⊢2+2ᶜ = ((⊢plusᶜ · ⊢twoᶜ) · ⊢twoᶜ) · ⊢sucᶜ · ⊢zero
 
 -- Lookup is injective (a helper for what follows)
 
@@ -514,7 +519,7 @@ Ch A = (A ⇒ A) ⇒ A ⇒ A
 -- Examples of proofs showing that terms are not typable.
 
 nope₁ : ∀ {A} → ¬ (∅ ⊢ `zero · `suc `zero ⦂ A)
-nope₁ = {!!}
+nope₁ (() · _)
 
 nope₂ : ∀ {A} → ¬ (∅ ⊢ ƛ "x" ⇒ ` "x" · ` "x" ⦂ A)
 nope₂ (⊢ƛ (⊢` ∋x · ⊢` ∋x′))  =  contradiction (∋-injective ∋x ∋x′)
