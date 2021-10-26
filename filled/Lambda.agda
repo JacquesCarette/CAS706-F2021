@@ -6,6 +6,7 @@ open import Data.Bool using (T; not)
 open import Data.String using (String; _≟_)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Function using (case_of_)
 open import Relation.Nullary using (Dec; yes; no; ¬_)
 open import Relation.Nullary.Decidable using (⌊_⌋; False; toWitnessFalse)
 open import Relation.Nullary.Negation using (¬?)
@@ -48,6 +49,9 @@ plus = μ "+" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
            [zero⇒ ` "n"
            |suc "m" ⇒ `suc (` "+" · ` "m" · ` "n") ]
 
+p′ : ℕ → ℕ → ℕ
+p′ = λ m → λ n → case m of λ { 0 → n ; (suc p) → p′ p n }
+
 2+2 : Term
 2+2 = plus · two · two
 
@@ -71,7 +75,7 @@ fourᶜ : Term
 fourᶜ = plusᶜ · twoᶜ · twoᶜ
 
 -- These definitions let us avoid some backticks and quotes.
-
+-- very ill-behaved macro. Don't do this at home!
 ƛ′_⇒_ : Term → Term → Term
 ƛ′ (` x) ⇒ N  =  ƛ x ⇒ N
 ƛ′ _ ⇒ _      =  ⊥-elim impossible
@@ -271,32 +275,26 @@ data _—↠′_ : Term → Term → Set where
 _ : twoᶜ · sucᶜ · `zero —↠ `suc `suc `zero
 _ =
   begin
-    twoᶜ · sucᶜ · `zero
-  —→⟨ ξ-·₁ (β-ƛ V-ƛ) ⟩
-    (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero
-  —→⟨ β-ƛ V-zero ⟩
-    sucᶜ · (sucᶜ · `zero)
-  —→⟨ ξ-·₂ V-ƛ (β-ƛ V-zero) ⟩
-    sucᶜ · `suc `zero
-  —→⟨ β-ƛ (V-suc V-zero) ⟩
-    `suc (`suc `zero)
-  ∎
+    (twoᶜ · sucᶜ) · `zero                     —→⟨ ξ-·₁ (β-ƛ V-ƛ) ⟩
+    (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero   —→⟨ β-ƛ V-zero ⟩
+    sucᶜ · (sucᶜ · `zero)                     —→⟨ ξ-·₂ V-ƛ (β-ƛ V-zero) ⟩
+    sucᶜ · `suc `zero                         —→⟨ β-ƛ (V-suc V-zero) ⟩
+    `suc (`suc `zero)                        ∎
 
 -- Two plus two is four.
 
 _ : plus · two · two —↠ `suc `suc `suc `suc `zero
 _ =
   begin
-    plus · two · two
-  —→⟨ ξ-·₁ (ξ-·₁ β-μ) ⟩
-    (ƛ "m" ⇒ ƛ "n" ⇒
-      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
-        · two · two
-  —→⟨ ξ-·₁ (β-ƛ (V-suc (V-suc V-zero))) ⟩
+    (plus · two) · two                          —→⟨ ξ-·₁ (ξ-·₁ β-μ) ⟩
+    ((ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n"
+                 |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · two) · two                            —→⟨ ξ-·₁ (β-ƛ (V-suc (V-suc V-zero))) ⟩
     (ƛ "n" ⇒
-      case two [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
-         · two
-  —→⟨ β-ƛ (V-suc (V-suc V-zero)) ⟩
+      case two [zero⇒ ` "n"
+               |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+         · two                                  —→⟨ β-ƛ (V-suc (V-suc V-zero)) ⟩
     case two [zero⇒ two |suc "m" ⇒ `suc (plus · ` "m" · two) ]
   —→⟨ β-suc (V-suc V-zero) ⟩
     `suc (plus · `suc `zero · two)
@@ -411,7 +409,8 @@ S′ : ∀ {Γ x y A B}
 
 S′ {x≢y = x≢y} x = S (toWitnessFalse x≢y) x
 
--- The typing judgment.
+-- The typing judgment. Expressing that a term is well-typed
+--   in a certain context.
 -- Intro/elim names in comments.
 
 infix  4  _⊢_⦂_
@@ -421,7 +420,7 @@ data _⊢_⦂_ : Context → Term → Type → Set where
   -- Axiom
   ⊢` : ∀ {Γ x A}
     → Γ ∋ x ⦂ A
-       -------------
+      -------------
     → Γ ⊢ ` x ⦂ A
 
   -- ⇒-I
@@ -480,7 +479,7 @@ Ch A = (A ⇒ A) ⇒ A ⇒ A
 ⊢twoᶜ = {!!}
 
 ⊢two : ∀ {Γ} → Γ ⊢ two ⦂ `ℕ
-⊢two = {!!}
+⊢two = ?
 
 -- A typing derivation for "two plus two".
 -- Done in arbitrary contexts to permit reuse.
