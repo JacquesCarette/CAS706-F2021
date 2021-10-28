@@ -87,22 +87,12 @@ typed cm:a = {!!}
 
 data Progress (M : Term) : Set where
 
-  step : ∀ {N}
-    → M —→ N
-      ----------
-    → Progress M
-
-  done :
-      Value M
-      ----------
-    → Progress M
+  step : ∀ {N} → M —→ N    → Progress M
+  done :         Value M   → Progress M
 
 -- The progress theorem: a term well-typed in the empty context satisfies Progress.
 
-progress : ∀ {M A}
-  → ∅ ⊢ M ⦂ A
-    ----------
-  → Progress M
+progress : ∀ {M A} → ∅ ⊢ M ⦂ A → Progress M
 progress m:a = {!!}
 
 -- 747/PLFA exercise: AltProg (5 points)
@@ -154,10 +144,7 @@ rename ρ (⊢μ ⊢M)           =  ⊢μ (rename (ext ρ) ⊢M)
 -- Weaken: a type judgment in the empty context can be weaked to any context.
 -- (Can use C-c C-h to ease write the helper function ρ.)
 
-weaken : ∀ {Γ M A}
-  → ∅ ⊢ M ⦂ A
-    ----------
-  → Γ ⊢ M ⦂ A
+weaken : ∀ {Γ M A} → ∅ ⊢ M ⦂ A → Γ ⊢ M ⦂ A
 weaken {Γ} m:a = {!!}
 
 -- Drop: a type judgment in a context with a repeated variable
@@ -212,10 +199,7 @@ subst {x = x₁} v:a (⊢μ {x = x} n:b) with x ≟ x₁
 -- Finally, a step of a well-typed term preserves types.
 
 preserve : ∀ {M N A}
-  → ∅ ⊢ M ⦂ A
-  → M —→ N
-    ----------
-  → ∅ ⊢ N ⦂ A
+        → ∅ ⊢ M ⦂ A              → M —→ N         → ∅ ⊢ N ⦂ A
 preserve (⊢L · ⊢M)               (ξ-·₁ L—→L′)     =  (preserve ⊢L L—→L′) · ⊢M
 preserve (⊢L · ⊢M)               (ξ-·₂ VL M—→M′)  =  ⊢L · (preserve ⊢M M—→M′)
 preserve ((⊢ƛ ⊢N) · ⊢V)          (β-ƛ VV)         =  subst ⊢V ⊢N
@@ -254,38 +238,19 @@ record Gas : Set where
     amount : ℕ
 
 data Finished (N : Term) : Set where
-
-  done :
-      Value N
-      ----------
-    → Finished N
-
-  out-of-gas :
-      ----------
-      Finished N
+  done :       Value N    → Finished N
+  out-of-gas :              Finished N
 
 data Steps (L : Term) : Set where
-
-  steps : ∀ {N}
-    → L —↠ N
-    → Finished N
-      ----------
-    → Steps L
-
-
-eval : ∀ {L A}
-  → Gas
-  → ∅ ⊢ L ⦂ A
-    ---------
-  → Steps L
+  steps : ∀ {N} → L —↠ N → Finished N → Steps L
 
 -- We can now write the evaluator.
-
+eval : ∀ {L A} → Gas → ∅ ⊢ L ⦂ A → Steps L
 eval {L} (gas zero) l:a = steps (L ∎) out-of-gas
 eval {L} (gas (suc x)) l:a with progress l:a
-eval {L} (gas (suc x)) l:a | step {N} x₁ with eval (gas x) (preserve l:a x₁)
-... | steps x₂ x₃ = steps (L —→⟨ x₁ ⟩ x₂) x₃
-eval {L} (gas (suc x)) l:a | done x₁ = steps (L ∎) (done x₁)
+eval {L} (gas (suc x)) l:a | step {N} st with eval (gas x) (preserve l:a st)
+... | steps st′ fin = steps (L —→⟨ st ⟩ st′) fin
+eval {L} (gas (suc x)) l:a | done v = steps (L ∎) (done v)
 
 -- A typing judgment for our previous example.
 
