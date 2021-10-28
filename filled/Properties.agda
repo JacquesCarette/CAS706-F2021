@@ -9,30 +9,25 @@ open import Data.String using (String; _≟_)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Product
-  using (_×_; proj₁; proj₂; ∃; ∃-syntax)
+  using (_×_; proj₁; proj₂; ∃; ∃-syntax; Σ)
   renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Relation.Nullary using (¬_; Dec; yes; no; does; proof; _because_; ofʸ; ofⁿ)
 open import Agda.Builtin.Bool using (true; false)
-open import Function using (_∘_)
+open import Function using (_∘_; case_of_)
 
 open import Isomorphism using (_≃_)
 open import Lambda
 
 -- Values do not step.
 
-V¬—→ : ∀ {M N}
-  → Value M
-    ----------
-  → ¬ (M —→ N)
+V¬—→ : ∀ {M N} → Value M → ¬ (M —→ N)
 V¬—→ (V-suc vm) (ξ-suc M—→N) = V¬—→ vm M—→N
 
 -- Step implies "not a value".
 
-—→¬V : ∀ {M N}
-  → M —→ N
-    ---------
-  → ¬ Value M
+—→¬V : ∀ {M N} → M —→ N → ¬ Value M
 —→¬V msn vm = V¬—→ vm msn
 
 -- Evidence of canonical forms for well-typed values.
@@ -41,52 +36,30 @@ infix  4 Canonical_⦂_
 
 data Canonical_⦂_ : Term → Type → Set where
 
-  C-ƛ : ∀ {x A N B}
-    → ∅ , x ⦂ A ⊢ N ⦂ B
-      -----------------------------
-    → Canonical (ƛ x ⇒ N) ⦂ (A ⇒ B)
-
-  C-zero :
-      --------------------
-      Canonical `zero ⦂ `ℕ
-
-  C-suc : ∀ {V}
-    → Canonical V ⦂ `ℕ
-      ---------------------
-    → Canonical `suc V ⦂ `ℕ
+  C-ƛ : ∀ {x A N B} → ∅ , x ⦂ A ⊢ N ⦂ B    → Canonical (ƛ x ⇒ N) ⦂ (A ⇒ B)
+  C-zero :                                  Canonical `zero ⦂ `ℕ
+  C-suc : ∀ {V}     → Canonical V ⦂ `ℕ    → Canonical `suc V ⦂ `ℕ
 
 -- Every closed, well-typed value is canonical.
 -- (That is, we got all the cases in the above definition.)
 
-canonical : ∀ {V A}
-  → ∅ ⊢ V ⦂ A
-  → Value V
-    -----------
-  → Canonical V ⦂ A
-
+canonical : ∀ {V A} → ∅ ⊢ V ⦂ A → Value V → Canonical V ⦂ A
 canonical v:a vv = {!!}
 
 -- If a term is canonical, it is a value.
 
-value : ∀ {M A}
-  → Canonical M ⦂ A
-    ----------------
-  → Value M
+value : ∀ {M A} → Canonical M ⦂ A → Value M
 value cm:a = {!!}
 
 -- If a term is canonical, it is well-typed in the empty context.
 
-typed : ∀ {M A}
-  → Canonical M ⦂ A
-    ---------------
-  → ∅ ⊢ M ⦂ A
+typed : ∀ {M A} → Canonical M ⦂ A → ∅ ⊢ M ⦂ A
 typed cm:a = {!!}
 
 -- Evidence for the progress theorem.
 -- Either a step can be taken, or we're done (at a value).
 
 data Progress (M : Term) : Set where
-
   step : ∀ {N} → M —→ N    → Progress M
   done :         Value M   → Progress M
 
@@ -94,24 +67,6 @@ data Progress (M : Term) : Set where
 
 progress : ∀ {M A} → ∅ ⊢ M ⦂ A → Progress M
 progress m:a = {!!}
-
--- 747/PLFA exercise: AltProg (5 points)
--- Here is an alternate formulation of progress.
--- Show that it is isomorphic to Progress M, and prove this form
--- of the progress theorem directly.
-
-progress-iso : ∀ {M} → Progress M ≃ Value M ⊎ ∃[ N ](M —→ N)
-progress-iso = {!!}
-
-progress′ : ∀ M {A} → ∅ ⊢ M ⦂ A → Value M ⊎ ∃[ N ](M —→ N)
-progress′ m m:a = {!!}
-
--- 747/PLFA exercise: ValueEh (1 point)
--- Write a function to decide whether a well-typed term is a value.
--- Hint: reuse theorems proved above to do most of the work.
-
-value? : ∀ {A M} → ∅ ⊢ M ⦂ A → Dec (Value M)
-value? m:a = {!!}
 
 -- Preservation: types are preserved by reduction.
 
@@ -127,10 +82,8 @@ ext ρ (S x≢y ∋x)  =  S x≢y (ρ ∋x)
 -- Renaming lemma: if context Δ extends Γ,
 -- then type judgments using Γ can be done using Δ.
 
-rename : ∀ {Γ Δ}
-        → (∀ {x A} → Γ ∋ x ⦂ A → Δ ∋ x ⦂ A)
-          ----------------------------------
-        → (∀ {M A} → Γ ⊢ M ⦂ A → Δ ⊢ M ⦂ A)
+rename : ∀ {Γ Δ} → (∀ {x A} → Γ ∋ x ⦂ A → Δ ∋ x ⦂ A)
+                 → (∀ {M A} → Γ ⊢ M ⦂ A → Δ ⊢ M ⦂ A)
 rename ρ (⊢` ∋w)           =  ⊢` (ρ ∋w)
 rename ρ (⊢ƛ ⊢N)           =  ⊢ƛ (rename (ext ρ) ⊢N)
 rename ρ (⊢L · ⊢M)         =  (rename ρ ⊢L) · (rename ρ ⊢M)
@@ -150,20 +103,13 @@ weaken {Γ} m:a = {!!}
 -- Drop: a type judgment in a context with a repeated variable
 -- can drop the earlier occurrence.
 
-drop : ∀ {Γ x M A B C}
-  → Γ , x ⦂ A , x ⦂ B ⊢ M ⦂ C
-    --------------------------
-  → Γ , x ⦂ B ⊢ M ⦂ C
+drop : ∀ {Γ x M A B C} → Γ , x ⦂ A , x ⦂ B ⊢ M ⦂ C → Γ , x ⦂ B ⊢ M ⦂ C
 drop {Γ} {x} {M} {A} {B} {C} m:c = {!!}
 
 -- Swap: if the two most recent additions to the context are for
 -- different variables, they can be swapped.
 
-swap : ∀ {Γ x y M A B C}
-  → x ≢ y
-  → Γ , y ⦂ B , x ⦂ A ⊢ M ⦂ C
-    --------------------------
-  → Γ , x ⦂ A , y ⦂ B ⊢ M ⦂ C
+swap : ∀ {Γ x y M A B C} → x ≢ y → Γ , y ⦂ B , x ⦂ A ⊢ M ⦂ C → Γ , x ⦂ A , y ⦂ B ⊢ M ⦂ C
 swap {Γ} {x} {y} {M} {A} {B} {C} x≢y m:c = {!!}
 
 -- Substitution lemma: substitution preserves types.
@@ -218,17 +164,12 @@ preserve (⊢μ ⊢M)                 (β-μ)            =  subst (⊢μ ⊢M) �
 
 sucμ  =  μ "x" ⇒ `suc (` "x")
 
-_ =
-  begin
-    sucμ
-  —→⟨ β-μ ⟩
-    `suc sucμ
-  —→⟨ ξ-suc β-μ ⟩
-    `suc `suc sucμ
-  —→⟨ ξ-suc (ξ-suc β-μ) ⟩
-    `suc `suc `suc sucμ
-  --  ...
-  ∎
+_ = begin
+    sucμ                —→⟨ β-μ ⟩
+    `suc sucμ           —→⟨ ξ-suc β-μ ⟩
+    `suc `suc sucμ      —→⟨ ξ-suc (ξ-suc β-μ) ⟩
+    `suc `suc `suc sucμ --  ...
+                        ∎
 
 -- One solution: supply "gas" (an integer limiting number of steps)
 
@@ -246,11 +187,11 @@ data Steps (L : Term) : Set where
 
 -- We can now write the evaluator.
 eval : ∀ {L A} → Gas → ∅ ⊢ L ⦂ A → Steps L
-eval {L} (gas zero) l:a = steps (L ∎) out-of-gas
+eval {L} (gas zero) l:a                                                      = steps (L ∎) out-of-gas
 eval {L} (gas (suc x)) l:a with progress l:a
 eval {L} (gas (suc x)) l:a | step {N} st with eval (gas x) (preserve l:a st)
-... | steps st′ fin = steps (L —→⟨ st ⟩ st′) fin
-eval {L} (gas (suc x)) l:a | done v = steps (L ∎) (done v)
+...                                      | steps st′ fin                     = steps (L —→⟨ st ⟩ st′) fin
+eval {L} (gas (suc x)) l:a               | done v                            = steps (L ∎) (done v)
 
 -- A typing judgment for our previous example.
 
@@ -264,14 +205,10 @@ eval {L} (gas (suc x)) l:a | done v = steps (L ∎) (done v)
 
 _ : eval (gas 3) ⊢sucμ ≡
   steps
-   (μ "x" ⇒ `suc ` "x"
-   —→⟨ β-μ ⟩
-    `suc (μ "x" ⇒ `suc ` "x")
-   —→⟨ ξ-suc β-μ ⟩
-    `suc (`suc (μ "x" ⇒ `suc ` "x"))
-   —→⟨ ξ-suc (ξ-suc β-μ) ⟩
-    `suc (`suc (`suc (μ "x" ⇒ `suc ` "x")))
-   ∎)
+   (μ "x" ⇒ `suc ` "x"                      —→⟨ β-μ ⟩
+    `suc (μ "x" ⇒ `suc ` "x")               —→⟨ ξ-suc β-μ ⟩
+    `suc (`suc (μ "x" ⇒ `suc ` "x"))        —→⟨ ξ-suc (ξ-suc β-μ) ⟩
+    `suc (`suc (`suc (μ "x" ⇒ `suc ` "x"))) ∎)
    out-of-gas
 _ = refl
 
@@ -523,12 +460,6 @@ _ = refl
 --    (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
 -- _ = refl
 
-
--- PLFA exercise: use the evaluator to confirm that two times two is four.
--- PLFA exercise (recommended):
--- Without peeking, write down the statements of progress and preservation.
--- PLFA exercise: subject expansion
-
 -- Well-typed terms don't get stuck.
 
 -- A term is normal (or a normal form) if it cannot reduce.
@@ -541,30 +472,16 @@ Normal M  =  ∀ {N} → ¬ (M —→ N)
 Stuck : Term → Set
 Stuck M  =  Normal M × ¬ Value M
 
--- 747/PLFA exercise: Unstuck (3 points)
--- Using progress and preservation, prove the following:
+--
+eval′ : ∀ {L A} → Gas → ∅ ⊢ L ⦂ A → Maybe Term
+eval′ {L} gs trm =
+  case (eval gs trm) of
+  λ { (steps {N} _ (done _))    → just N
+    ; (steps     _  out-of-gas) → nothing
+    }
 
-unstuck : ∀ {M A}
-  → ∅ ⊢ M ⦂ A
-    -----------
-  → ¬ (Stuck M)
-unstuck m:a = {!!}
-
-preserves : ∀ {M N A}
-  → ∅ ⊢ M ⦂ A
-  → M —↠ N
-    ---------
-  → ∅ ⊢ N ⦂ A
-preserves m:a msn = {!!}
-
-wttdgs : ∀ {M N A}
-  → ∅ ⊢ M ⦂ A
-  → M —↠ N
-    -----------
-  → ¬ (Stuck N)
-wttdgs m:a msn = {!!}
-
--- PLFA exercise: give an ill-typed term that does get stuck.
+_ : eval′ (gas 100) ⊢2+2 ≡ just (`suc `suc `suc `suc `zero )
+_ = refl
 
 -- Reduction is deterministic, proved.
 
@@ -579,11 +496,7 @@ cong₄ f refl refl refl refl = refl
 -- (Can be simplified using 'rewrite', but not much.)
 
 det : ∀ {M M′ M″}
-  → (M —→ M′)
-  → (M —→ M″)
-    --------
-  → M′ ≡ M″
-
+  → (M —→ M′)    → (M —→ M″)        → M′ ≡ M″
 det (ξ-·₁ L—→L′)   (ξ-·₁ L—→L″)     =  cong₂ _·_ (det L—→L′ L—→L″) refl
 det (ξ-·₁ L—→L′)   (ξ-·₂ VL M—→M″)  =  ⊥-elim (V¬—→ VL L—→L′)
 det (ξ-·₁ L—→L′)   (β-ƛ _)          =  ⊥-elim (V¬—→ V-ƛ L—→L′)
