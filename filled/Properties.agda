@@ -44,17 +44,23 @@ data Canonical_⦂_ : Term → Type → Set where
 -- (That is, we got all the cases in the above definition.)
 
 canonical : ∀ {V A} → ∅ ⊢ V ⦂ A → Value V → Canonical V ⦂ A
-canonical v:a vv = {!!}
+canonical (⊢ƛ v:a) V-ƛ = C-ƛ v:a
+canonical ⊢zero V-zero = C-zero
+canonical (⊢suc v:a) (V-suc vv) = C-suc (canonical v:a vv)
 
 -- If a term is canonical, it is a value.
 
 value : ∀ {M A} → Canonical M ⦂ A → Value M
-value cm:a = {!!}
+value (C-ƛ x) = V-ƛ
+value C-zero = V-zero
+value (C-suc cm:a) = V-suc (value cm:a)
 
 -- If a term is canonical, it is well-typed in the empty context.
 
 typed : ∀ {M A} → Canonical M ⦂ A → ∅ ⊢ M ⦂ A
-typed cm:a = {!!}
+typed (C-ƛ x) = ⊢ƛ x
+typed C-zero = ⊢zero
+typed (C-suc cm:a) = ⊢suc (typed cm:a)
 
 -- Evidence for the progress theorem.
 -- Either a step can be taken, or we're done (at a value).
@@ -66,7 +72,21 @@ data Progress (M : Term) : Set where
 -- The progress theorem: a term well-typed in the empty context satisfies Progress.
 
 progress : ∀ {M A} → ∅ ⊢ M ⦂ A → Progress M
-progress m:a = {!!}
+progress (⊢ƛ m:a) = done V-ƛ
+progress (m:a · n:b) with progress m:a
+... | step x = step (ξ-·₁ x)
+... | done V-ƛ with progress n:b
+...            | step z = step (ξ-·₂ V-ƛ z)
+...            | done z = step (β-ƛ z )
+progress ⊢zero = done V-zero
+progress (⊢suc m:a) with progress m:a
+... | step x = step (ξ-suc x)
+... | done x = done (V-suc x)
+progress (⊢case L:ℕ m:a n:a) with progress L:ℕ
+... | step z = step (ξ-case z)
+... | done V-zero = step β-zero
+... | done (V-suc z) = step (β-suc z)
+progress (⊢μ m:a) = step β-μ
 
 -- Preservation: types are preserved by reduction.
 
@@ -98,7 +118,12 @@ rename ρ (⊢μ ⊢M)           =  ⊢μ (rename (ext ρ) ⊢M)
 -- (Can use C-c C-h to ease write the helper function ρ.)
 
 weaken : ∀ {Γ M A} → ∅ ⊢ M ⦂ A → Γ ⊢ M ⦂ A
-weaken {Γ} m:a = {!!}
+weaken {Γ} (⊢ƛ m:a) = ⊢ƛ {!!}
+weaken {Γ} (m:a · n:b) = (weaken m:a) · (weaken n:b)
+weaken {Γ} ⊢zero = ⊢zero
+weaken {Γ} (⊢suc m:a) = ⊢suc (weaken m:a)
+weaken {Γ} (⊢case m:a m:a₁ m:a₂) = {!!}
+weaken {Γ} (⊢μ m:a) = {!!}
 
 -- Drop: a type judgment in a context with a repeated variable
 -- can drop the earlier occurrence.
