@@ -118,24 +118,32 @@ rename ρ (⊢μ ⊢M)           =  ⊢μ (rename (ext ρ) ⊢M)
 -- (Can use C-c C-h to ease write the helper function ρ.)
 
 weaken : ∀ {Γ M A} → ∅ ⊢ M ⦂ A → Γ ⊢ M ⦂ A
-weaken {Γ} (⊢ƛ m:a) = ⊢ƛ {!!}
-weaken {Γ} (m:a · n:b) = (weaken m:a) · (weaken n:b)
-weaken {Γ} ⊢zero = ⊢zero
-weaken {Γ} (⊢suc m:a) = ⊢suc (weaken m:a)
-weaken {Γ} (⊢case m:a m:a₁ m:a₂) = {!!}
-weaken {Γ} (⊢μ m:a) = {!!}
+weaken {Γ} m:a = rename ρ m:a
+  where
+    ρ : {x : Id} {B : Type} → ∅ ∋ x ⦂ B → Γ ∋ x ⦂ B
+    ρ ()
 
 -- Drop: a type judgment in a context with a repeated variable
 -- can drop the earlier occurrence.
 
 drop : ∀ {Γ x M A B C} → Γ , x ⦂ A , x ⦂ B ⊢ M ⦂ C → Γ , x ⦂ B ⊢ M ⦂ C
-drop {Γ} {x} {M} {A} {B} {C} m:c = {!!}
+drop {Γ} {x} {M} {A} {B} {C} m:c = rename ρ m:c
+ where
+   ρ : ∀ {Γ} {x} {A} {B} {y} {D} → Γ , x ⦂ A , x ⦂ B ∋ y ⦂ D → Γ , x ⦂ B ∋ y ⦂ D
+   ρ Z = Z
+   ρ (S {x = _} y≠x₁ Z) = ⊥-elim (y≠x₁ refl)
+   ρ (S {x = x₁} y≠x₁ (S x₁≠x₂ ∋y)) = S x₁≠x₂ ∋y
 
 -- Swap: if the two most recent additions to the context are for
 -- different variables, they can be swapped.
 
 swap : ∀ {Γ x y M A B C} → x ≢ y → Γ , y ⦂ B , x ⦂ A ⊢ M ⦂ C → Γ , x ⦂ A , y ⦂ B ⊢ M ⦂ C
-swap {Γ} {x} {y} {M} {A} {B} {C} x≢y m:c = {!!}
+swap {Γ} {x} {y} {M} {A} {B} {C} x≢y m:c = rename ρ m:c
+  where
+    ρ : {z : Id} {D : Type} → Γ , y ⦂ B , x ⦂ A ∋ z ⦂ D → Γ , x ⦂ A , y ⦂ B ∋ z ⦂ D
+    ρ Z = S x≢y Z
+    ρ (S x Z) = Z
+    ρ (S x (S x₁ p)) = S x₁ (S x p)
 
 -- Substitution lemma: substitution preserves types.
 
@@ -146,11 +154,11 @@ subst : ∀ {Γ x N V A B}
   → Γ ⊢ N [ x := V ] ⦂ B
 
 subst {x = x₂} v:a (⊢` {x = .x₂} Z) with x₂ ≟ x₂
-... | .true because ofʸ p = weaken v:a
-... | .false because ofⁿ ¬p = ⊥-elim (¬p refl)
-subst {x = x₂} v:a (⊢` {x = x₁} (S x x₃)) with x₁ ≟ x₂
-... | .true because ofʸ p = ⊥-elim (x p)
-... | .false because ofⁿ ¬p = ⊢` x₃
+... | yes p = weaken v:a
+... | no ¬p = ⊥-elim (¬p refl)
+subst {x = x₂} v:a (⊢` {x = x₁} (S x₁≢x₂ x₃)) with x₁ ≟ x₂
+... | .true because ofʸ p = ⊥-elim (x₁≢x₂ p)
+... | .false because ofⁿ ¬p =   ⊢` x₃
 subst {x = x₁} v:a (⊢ƛ {x = x} n:b) with x ≟ x₁
 ... | .true because ofʸ refl = ⊢ƛ (drop n:b)
 ... | .false because ofⁿ ¬p = ⊢ƛ (subst v:a (swap ¬p n:b))
@@ -195,7 +203,7 @@ _ = begin
     `suc `suc sucμ      —→⟨ ξ-suc (ξ-suc β-μ) ⟩
     `suc `suc `suc sucμ --  ...
                         ∎
-
+{-
 -- One solution: supply "gas" (an integer limiting number of steps)
 
 record Gas : Set where
@@ -541,3 +549,4 @@ det β-zero         β-zero           =  refl
 det (β-suc VL)     (ξ-case L—→L″)   =  ⊥-elim (V¬—→ (V-suc VL) L—→L″)
 det (β-suc _)      (β-suc _)        =  refl
 det β-μ            β-μ              =  refl
+-}
