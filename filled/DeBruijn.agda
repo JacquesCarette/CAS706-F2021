@@ -84,7 +84,7 @@ _ : ∅ , `ℕ ⇒ `ℕ ⊢ `ℕ ⇒ `ℕ
 _ = ƛ (` S Z · (` S Z · ` Z))
 
 _ : ∅ ⊢ (`ℕ ⇒ `ℕ) ⇒ `ℕ ⇒ `ℕ
-_ = ƛ ƛ (` S Z · (` S Z · ` Z))
+_ = ƛ ƛ (` S Z · (` S Z · ` Z)) -- λ λ 1 (1 0)
 
 -- Making variable use a little more readable
 -- by using natural numbers to index into contexts.
@@ -114,7 +114,7 @@ count {Γ , x} (suc n) {s≤s g} = S (count n {g})
 -- Some examples of the new notation.
 
 _ : ∅ ⊢ (`ℕ ⇒ `ℕ) ⇒ `ℕ ⇒ `ℕ
-_ = ƛ ƛ (# 1 · (# 1 · # 0))
+_ = ƛ ƛ (# 1 · (# 1 · # 0)) -- λ λ 1 (1 0)
 
 two : ∀ {Γ} → Γ ⊢ `ℕ
 two = `suc `suc `zero

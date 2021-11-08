@@ -203,8 +203,8 @@ _ = begin
     `suc `suc sucμ      —→⟨ ξ-suc (ξ-suc β-μ) ⟩
     `suc `suc `suc sucμ --  ...
                         ∎
-{-
--- One solution: supply "gas" (an integer limiting number of steps)
+
+-- One solution: supply "gas" (an natural number limiting number of steps)
 
 record Gas : Set where
   constructor gas
@@ -220,11 +220,11 @@ data Steps (L : Term) : Set where
 
 -- We can now write the evaluator.
 eval : ∀ {L A} → Gas → ∅ ⊢ L ⦂ A → Steps L
-eval {L} (gas zero) l:a                                                      = steps (L ∎) out-of-gas
+eval {L} (gas zero)    _                                                     = steps (L ∎) out-of-gas
 eval {L} (gas (suc x)) l:a with progress l:a
 eval {L} (gas (suc x)) l:a | step {N} st with eval (gas x) (preserve l:a st)
 ...                                      | steps st′ fin                     = steps (L —→⟨ st ⟩ st′) fin
-eval {L} (gas (suc x)) l:a               | done v                            = steps (L ∎) (done v)
+eval {L} (gas (suc x)) l:a | done v                                          = steps (L ∎) (done v)
 
 -- A typing judgment for our previous example.
 
@@ -244,7 +244,7 @@ _ : eval (gas 3) ⊢sucμ ≡
     `suc (`suc (`suc (μ "x" ⇒ `suc ` "x"))) ∎)
    out-of-gas
 _ = refl
-
+{-
 -- -- Running a terminating example.
 -- -- You should compile the file to run this.
 
@@ -492,7 +492,7 @@ _ = refl
 --    ∎)
 --    (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
 -- _ = refl
-
+-}
 -- Well-typed terms don't get stuck.
 
 -- A term is normal (or a normal form) if it cannot reduce.
@@ -505,16 +505,26 @@ Normal M  =  ∀ {N} → ¬ (M —→ N)
 Stuck : Term → Set
 Stuck M  =  Normal M × ¬ Value M
 
---
-eval′ : ∀ {L A} → Gas → ∅ ⊢ L ⦂ A → Maybe Term
-eval′ {L} gs trm =
+-- Not in PLFA ??
+-- Get the term when we terminate, only
+run : ∀ {L A} → Gas → ∅ ⊢ L ⦂ A → Maybe Term
+run {L} gs trm =
   case (eval gs trm) of
   λ { (steps {N} _ (done _))    → just N
     ; (steps     _  out-of-gas) → nothing
     }
 
-_ : eval′ (gas 100) ⊢2+2 ≡ just (`suc `suc `suc `suc `zero )
+_ : run (gas 100) ⊢2+2 ≡ just (`suc `suc `suc `suc `zero )
 _ = refl
+
+-- Get the term we get, either on termination or out-of-gas
+-- (and an indication of the case)
+run′ : ∀ {L A} → Gas → ∅ ⊢ L ⦂ A → Term ⊎ Term
+run′ gs trm =
+    case (eval gs trm) of
+     λ { (steps {N} _ (done _))    → inj₁ N
+       ; (steps {N} _  out-of-gas) → inj₂ N
+       }
 
 -- Reduction is deterministic, proved.
 
@@ -549,4 +559,3 @@ det β-zero         β-zero           =  refl
 det (β-suc VL)     (ξ-case L—→L″)   =  ⊥-elim (V¬—→ (V-suc VL) L—→L″)
 det (β-suc _)      (β-suc _)        =  refl
 det β-μ            β-μ              =  refl
--}
