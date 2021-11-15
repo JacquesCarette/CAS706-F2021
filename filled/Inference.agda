@@ -6,7 +6,8 @@ open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.String using (String; _≟_)
 open import Data.Product using (_×_; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Relation.Nullary using (¬_; Dec; yes; no; does; proof; _because_; ofʸ; ofⁿ)
-open import Agda.Builtin.Bool using (true; false)
+open import Function using (_∘_)
+open import Data.Bool using (true; false)
 open import Relation.Nullary.Decidable
   using (True; False; toWitness; toWitnessFalse; fromWitnessFalse) -- added
 import DBDefs as DB
@@ -158,38 +159,10 @@ data _⊢_↓_ where
       -------------
     → Γ ⊢ (M ↑) ↓ B
 
--- 747/PLFA exercise: NatMul (1 point)
--- Write the term for multiplication of natural numbers,
--- as you did in Lambda, but this time using the definitions above.
-
-mul : Term⁺
-mul = {!!}
-
--- 747/PLFA exercise: ChurchMul (1 point)
--- Same as above, but for multiplication of Church numbers.
-
-mulᶜ : Term⁺
-mulᶜ = {!!}
-
--- PLFA exercise: extend the rules to support products (from More)
-
--- PLFA exercise (stretch): extend the rules to support the other
--- constructs from More.
-
 -- Helper functions for computation of types,
 -- mostly needed in "no" decidability cases.
 
 -- Deciding equality of types (needed for the ⊢↑ rule).
-
-_≟Tp_ : (A B : Type) → Dec (A ≡ B)
-`ℕ      ≟Tp `ℕ              =  yes refl
-`ℕ      ≟Tp (A ⇒ B)         =  no λ()
-(A ⇒ B) ≟Tp `ℕ              =  no λ()
-(A ⇒ B) ≟Tp (A′ ⇒ B′)
-  with A ≟Tp A′ | B ≟Tp B′
-...  | no A≢    | _         =  no λ{refl → A≢ refl}
-...  | yes _    | no B≢     =  no λ{refl → B≢ refl}
-...  | yes refl | yes refl  =  yes refl
 
 -- Domain and range of equal function types are equal,
 -- and `ℕ is not a function type.
@@ -202,6 +175,16 @@ rng≡ refl = refl
 
 ℕ≢⇒ : ∀ {A B} → `ℕ ≢ A ⇒ B
 ℕ≢⇒ ()
+
+_≟Tp_ : (A B : Type) → Dec (A ≡ B)
+`ℕ      ≟Tp `ℕ              =  yes refl
+`ℕ      ≟Tp (A ⇒ B)         =  no ℕ≢⇒
+(A ⇒ B) ≟Tp `ℕ              =  no (ℕ≢⇒ ∘ sym)
+(A ⇒ B) ≟Tp (A′ ⇒ B′)
+  with A ≟Tp A′ | B ≟Tp B′
+...  | no A≢    | _         =  no (A≢ ∘ dom≡)
+...  | yes _    | no B≢     =  no (B≢ ∘ rng≡)
+...  | yes A≡   | yes B≡    =  yes (cong₂ _⇒_ A≡ B≡)
 
 -- The uniqueness helpers are needed for negative judgments.
 
@@ -450,148 +433,6 @@ _ = refl
 
 _ : ∥ ⊢2+2ᶜ ∥⁺ ≡ DB.2+2ᶜ
 _ = refl
-
--- PLFA exercise: demonstrate that synthesis on your decorated multiplication
--- (both for naturals and Church numbers)
--- followed by erasure gives your inherently-typed multiplication
--- (from DeBruijn).
--- Although there are no marks for this, this is a useful check
--- on your understanding, and you should consider doing it.
-
--- PLFA exercise: extend the above to include products.
-
--- PLFA exercise (stretch): extend the above to include
--- the rest of the features added in More.
-
--- 747 extended exercise: bidirectional typing on plain terms.
--- The synthesis/inheritance decorations (particularly ↑) are annoying,
--- and seem like they could be automated.
--- The main issue is that not all plain terms can be decorated,
--- and we have to avoid partial functions.
--- The proof by reflection idea can be used to our advantage.
-
--- Here are the constructors for plain terms copied
--- from Lambda, with type annotation added (last constructor).
-
-data Term : Set where
-  `_                      :  Id → Term
-  ƛ_⇒_                    :  Id → Term → Term
-  _·_                     :  Term → Term → Term
-  `zero                   :  Term
-  `suc_                   :  Term → Term
-  `case_[zero⇒_|suc_⇒_]    :  Term → Term → Id → Term → Term
-  μ_⇒_                    :  Id → Term → Term
-  _⦂_                     :  Term → Type → Term
-
--- Data definitions of synthesizable and inheritable.
-
-data Synth : Term → Set
-data Inherit : Term → Set
-
-data Synth where
-  var : {x : Id} → Synth (` x)
-  app : {M N : Term} → Synth M →  Inherit N → Synth (M · N)
-  ann : {M : Term} → {T : Type} → Inherit M → Synth (M ⦂ T)
-
-data Inherit where
-  lam : {x : Id} → {M : Term} → Inherit M → Inherit (ƛ x ⇒ M)
-  zer : Inherit `zero
-  suc : {M : Term} → Inherit M → Inherit (`suc M)
-  case : {M : Term} → {Z : Term} → {n : Id} → {S : Term}
-    → Synth M → Inherit Z → Inherit S
-    → Inherit (`case M [zero⇒ Z |suc n ⇒ S ])
-  mu : {x : Id} → {M : Term} → Inherit M → Inherit (μ x ⇒ M)
-  up : {M : Term} → Synth M → Inherit M
-
--- 747 exercise: DecideBidirect (5 points)
--- Implement the decision functions for Synth and Inherit.
-
-isSynth : (t : Term) → Dec (Synth t)
-isInherit : (t : Term) → Dec (Inherit t)
-
-isSynth = {!!}
-isInherit = {!!}
-
--- 747 exercise: Decorate (3 points)
--- Implement the mutually-recursive decorators.
-
-decorate⁻ : (t : Term) → Inherit t → Term⁻
-decorate⁺ : (t : Term) → Synth t → Term⁺
-
-decorate⁻ = {!!}
-decorate⁺ = {!!}
-
--- 747 exercise: ToTerm (2 points)
--- Use the proof by reflection idea as before to
--- automatically compute the supporting proofs for literal terms
--- and hide them away.
-
-toTerm⁺ : (t : Term) → {i : True (isSynth t)} → Term⁺
-toTerm⁺ = {!!}
-
-toTerm⁻ : (t : Term) → {i : True (isInherit t)} → Term⁻
-toTerm⁻ = {!!}
-
--- Examples from Lambda which serve as unit tests for the above.
-
-ltwo : Term
-ltwo = `suc `suc `zero
-
-lplus : Term
-lplus = (μ "p" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
-          `case ` "m"
-            [zero⇒ ` "n"
-            |suc "m" ⇒ `suc (` "p" · ` "m" · ` "n") ])
-         ⦂ (`ℕ ⇒ `ℕ ⇒ `ℕ)
-
-l2+2 : Term
-l2+2 = lplus · ltwo · ltwo
-
-ltwoᶜ : Term
-ltwoᶜ =  ƛ "s" ⇒ ƛ "z" ⇒ ` "s" · (` "s" · ` "z")
-
-lplusᶜ : Term
-lplusᶜ =  (ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
-         ` "m" · ` "s" · (` "n" · ` "s" · ` "z"))
-         ⦂ (Ch ⇒ Ch ⇒ Ch)
-
-lsucᶜ : Term
-lsucᶜ = ƛ "x" ⇒ `suc (` "x")
-
-l2+2ᶜ : Term
-l2+2ᶜ = lplusᶜ · ltwoᶜ · ltwoᶜ · lsucᶜ · `zero
-
-_ : toTerm⁻ ltwo ≡ two
-_ = refl
-
-_ : toTerm⁺ lplus ≡ plus
-_ = refl
-
-_ : toTerm⁺ l2+2 ≡ 2+2
-_ = refl
-
-_ : toTerm⁻ ltwoᶜ ≡ twoᶜ
-_ = refl
-
-_ : toTerm⁺ lplusᶜ ≡ plusᶜ
-_ = refl
-
-_ : toTerm⁻ lsucᶜ ≡ sucᶜ
-_ = refl
-
-_ : toTerm⁺ l2+2ᶜ ≡ 2+2ᶜ
-_ = refl
-
--- 747 exercise: ontoTerm (3 points)
--- Show that Synth and Inherit definitions are inclusive enough,
--- that is, for every Term⁻ there is a plain term with inherit evidence
--- that maps onto it, and similarly for Term⁺. Why is it not an isomorphism?
-
-ontoTerm⁻ : ∀ (t⁻ : Term⁻) → ∃[ t ] (∃[ i ] (decorate⁻ t i ≡ t⁻))
-ontoTerm⁺ : ∀ (t⁺ : Term⁺) → ∃[ t ] (∃[ s ] (decorate⁺ t s ≡ t⁺))
-
-ontoTerm⁻ = {!!}
-ontoTerm⁺ = {!!}
 
 {-
   Unicode used in this chapter:
