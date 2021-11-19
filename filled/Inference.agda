@@ -67,6 +67,9 @@ plus = (μ "p" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
                         |suc "m" ⇒ `suc (` "p" · (` "m" ↑) · (` "n" ↑) ↑) ])
             ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
 
+succ : Term⁻
+succ = ƛ "n" ⇒ `suc (` "n" ↑)
+
 2+2 : Term⁺
 2+2 = plus · two · two
 Ch : Type
@@ -243,13 +246,9 @@ lookup (Γ , y ⦂ B) x with x ≟ y
 
 -- Mutually-recursive synthesize and inherit functions.
 
-synthesize : ∀ (Γ : Context) (M : Term⁺)
-    -----------------------
-  → Dec (∃[ A ](Γ ⊢ M ↑ A))
+synthesize : ∀ (Γ : Context) (M : Term⁺)         → Dec (∃[ A ](Γ ⊢ M ↑ A))
 
-inherit : ∀ (Γ : Context) (M : Term⁻) (A : Type)
-    ---------------
-  → Dec (Γ ⊢ M ↓ A)
+inherit : ∀ (Γ : Context) (M : Term⁻) (A : Type) → Dec (Γ ⊢ M ↓ A)
 
 synthesize Γ (` x) with lookup Γ x
 ... | no  ¬∃              =  no  (λ{ ⟨ A , ⊢` ∋x ⟩ → ¬∃ ⟨ A , ∋x ⟩ })
@@ -308,6 +307,9 @@ inherit Γ (M ↑) B with synthesize Γ M
 
 
 -- Check that synthesis is correct (more below).
+
+trm : Term⁺
+trm = (succ ↓ `ℕ ⇒ `ℕ) · `zero
 
 _ : synthesize ∅ 2+2 ≡ yes ⟨ `ℕ , ⊢2+2 ⟩
 _ = refl
@@ -407,7 +409,7 @@ _ = refl
 
 ∥_∥∋ : ∀ {Γ x A} → Γ ∋ x ⦂ A → ∥ Γ ∥Cx DB.∋ ∥ A ∥Tp
 ∥ Z ∥∋               =  DB.Z
-∥ S ⊢x ∥∋         =  DB.S ∥ ⊢x ∥∋
+∥ S {i} ⊢x ∥∋         =  DB.S ∥ ⊢x ∥∋
 
 -- Mutually-recursive functions to erase typing judgments.
 
