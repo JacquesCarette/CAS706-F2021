@@ -1,5 +1,3 @@
--- FIX: Gas, conlen
-
 module Untyped where
 
 -- Library.
@@ -7,9 +5,10 @@ module Untyped where
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; sym; trans; cong)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat
  using (ℕ; zero; suc; _+_; _∸_; _<_; _<?_; s≤s; z≤n)
-open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product using (Σ; _×_) renaming (_,_ to ⟨_,_⟩)
 open import Data.Unit using (⊤; tt)
 open import Function using (_∘_)
 open import Function.Equivalence using (_⇔_; equivalence)
@@ -24,7 +23,7 @@ open import Relation.Nullary.Product using (_×-dec_)
 ---- call-by-name instead of call-by-value;
 ---- full normalization (in lambda bodies);
 ---- non-deterministic reduction;
----- minimal STLC, with other constructs encoded.
+---- minimal ULC, with other constructs encoded.
 
 -- Syntax.
 
@@ -73,13 +72,15 @@ count {∅}     _        =  ⊥-elim impossible
 -- Examples.
 
 twoᶜ : ∀ {Γ} → Γ ⊢ ★
-twoᶜ = {!!}
+twoᶜ = ƛ ƛ (# 1) · ((# 1) · (# 0))
 
 fourᶜ : ∀ {Γ} → Γ ⊢ ★
-fourᶜ = {!!}
+fourᶜ = ƛ ƛ (# 1) · (# 1 · (# 1 · (# 1 · # 0)))
 
+--  ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
+--         ` "m" · ` "s" · (` "n" · ` "s" · ` "z")
 plusᶜ : ∀ {Γ} → Γ ⊢ ★
-plusᶜ = {!!}
+plusᶜ = ƛ ƛ ƛ ƛ # 3 · # 1 · (# 2 · # 1 · # 0)
 
 2+2ᶜ : ∅ ⊢ ★
 2+2ᶜ = plusᶜ · twoᶜ · twoᶜ
@@ -122,12 +123,13 @@ subst σ (ƛ N)          =  ƛ (subst (exts σ) N)
 subst σ (L · M)        =  (subst σ L) · (subst σ M)
 
 subst-zero : ∀ {Γ B} → (Γ ⊢ B) → ∀ {A} → (Γ , B ∋ A) → (Γ ⊢ A)
-subst-zero M p = {!!}
+subst-zero M Z     = M
+subst-zero _ (S p) = ` p
 
 -- Single substitution is a special case, as before.
 
 _[_] : ∀ {Γ A B} → Γ , B ⊢ A    → Γ ⊢ B    → Γ ⊢ A
-_[_] {Γ} {A} {B} N M = {!!}
+_[_] {Γ} {A} {B} N M = subst {Γ , B} {Γ} (subst-zero M) {A} N
 
 -- We are now going to reduce in the body of lambdas, so
 -- reduction will apply to open terms.
@@ -199,11 +201,11 @@ begin M—↠N = M—↠N
 -- An example of a reduction sequence.
 _ : 2+2ᶜ —↠ fourᶜ
 _ = begin
-    plusᶜ · twoᶜ · twoᶜ                                  —→⟨ ξ₁ β ⟩
+    (plusᶜ · twoᶜ) · twoᶜ                                —→⟨ ξ₁ β ⟩
     (ƛ ƛ ƛ twoᶜ · # 1 · (# 2 · # 1 · # 0)) · twoᶜ        —→⟨ β ⟩
-    ƛ ƛ twoᶜ · # 1 · (twoᶜ · # 1 · # 0)                  —→⟨ ζ (ζ (ξ₁ β)) ⟩
+    ƛ ƛ (twoᶜ · # 1) · (twoᶜ · # 1 · # 0)                —→⟨ ζ (ζ (ξ₁ β)) ⟩
     ƛ ƛ ((ƛ # 2 · (# 2 · # 0)) · (twoᶜ · # 1 · # 0))     —→⟨ ζ (ζ β) ⟩
-    ƛ ƛ # 1 · (# 1 · (twoᶜ · # 1 · # 0))                 —→⟨ ζ (ζ (ξ₂ (ξ₂ (ξ₁ β)))) ⟩
+    ƛ ƛ # 1 · (# 1 · ((twoᶜ · # 1) · # 0))               —→⟨ ζ (ζ (ξ₂ (ξ₂ (ξ₁ β)))) ⟩
     ƛ ƛ # 1 · (# 1 · ((ƛ # 2 · (# 2 · # 0)) · # 0))      —→⟨ ζ (ζ (ξ₂ (ξ₂ β))) ⟩
    ƛ (ƛ # 1 · (# 1 · (# 1 · (# 1 · # 0))))               ∎
 
@@ -253,8 +255,12 @@ eval (gas (suc m)) L with progress L
 ... | step {M} L—→M with eval (gas m) M
 ...    | steps M—↠N fin                  =  steps (L —→⟨ L—→M ⟩ M—↠N) fin
 
+eval′ : ∀ {Γ A} → Gas → (L : Γ ⊢ A) → Maybe (Γ ⊢ A )
+eval′ g L with eval g L
+... | steps {N = N} _ (done _) = just N
+... | steps _ out-of-gas = nothing
+
 -- An example.
-{-
 _ : eval (gas 100) 2+2ᶜ ≡
   steps
    ((ƛ
@@ -304,7 +310,7 @@ _ : eval (gas 100) 2+2ᶜ ≡
        (` (S Z)) ·
        (′ (` (S Z)) · (′ (` (S Z)) · (′ (` (S Z)) · (′ (` Z)))))))))
 _ = refl
--}
+
 
 -- Scott numerals: representing a number by its eliminator (case)
 -- zero = λs.λz.z
@@ -329,13 +335,25 @@ case L M N = L · (ƛ N) · M
 
 infix 5 μ_
 
+one : ∀ {Γ} → Γ ⊢ ★
+one = ƛ ƛ (# 1 · `zero)
+
 two : ∀ {Γ} → Γ ⊢ ★
 two = `suc `suc `zero
+
+two′ : ∀ {Γ} → Maybe (Γ ⊢ ★)
+two′ = eval′ (gas 100) two
+
+{- evaluation does something for sure, but we don't get
+  a Church numeral out, we get the Scott one -}
+two′≡two : ∀ {Γ} → two′ {Γ} ≡ just (ƛ ƛ (# 1 · one)) -- λs.λz.(s one)
+two′≡two = refl
 
 four : ∀ {Γ} → Γ ⊢ ★
 four = `suc `suc `suc `suc `zero
 
 plus : ∀ {Γ} → Γ ⊢ ★
+ -- μ "+" λ m λ n . if m = 0 then n else suc (+ n m)
 plus = μ ƛ ƛ (case (# 1) (# 0) (`suc (# 3 · # 0 · # 1)))
 
 2+2 : ∅ ⊢ ★
@@ -343,6 +361,9 @@ plus = μ ƛ ƛ (case (# 1) (# 0) (`suc (# 3 · # 0 · # 1)))
 
 -- PLFA exercise: confirm that plus · two · two and four
 -- normalize to the same term.
+
+2+2≡four : eval′ (gas 100) 2+2 ≡ eval′ (gas 100) four
+2+2≡four = refl
 
 -- PLFA exercise: define multiplication, and confirm that
 -- two times two is four.
